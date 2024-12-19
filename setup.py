@@ -11,13 +11,13 @@ with open("requirements.txt", encoding="utf-8") as f:
 
 setup(
     name="crypto-wallet-finder",  # Changed to be more specific and avoid conflicts
-    version="1.0.0",
+    version="1.0.1",
     packages=find_packages(),
     install_requires=requirements,
     
     # Metadata
     author="Wallet Finder Contributors",
-    author_email="your.email@example.com",  # Update this
+    author_email="rbmorena42@gmail.com",
     description="A tool for finding cryptocurrency wallet seeds using parallel processing",
     long_description=long_description,
     long_description_content_type="text/markdown",
