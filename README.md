@@ -21,8 +21,8 @@ pip install crypto-wallet-finder
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/wallet_finder.git
-cd wallet_finder/package
+git clone https://github.com/RKInnovate/waller-finder-pkg.git
+cd waller-finder-pkg
 pip install -e .
 ```
 
