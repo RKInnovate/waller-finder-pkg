@@ -8,7 +8,7 @@ import itertools
 import multiprocessing
 from pathlib import Path
 from more_itertools import chunked
-from crypto_wallet import CryptoWallet
+from .crypto_wallet import CryptoWallet
 
 from .utils import logger_config, get_config, save_config
 
