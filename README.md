@@ -32,7 +32,6 @@ pip install -e .
 - Required packages (automatically installed):
   - requests>=2.25.0
   - more-itertools>=8.0.0
-  - crypto-wallet>=1.0.0
 
 ## Usage
 
