@@ -8,7 +8,7 @@ import itertools
 import multiprocessing
 from pathlib import Path
 from more_itertools import chunked
-from crypto_wallet import CryptoWallet
+from .crypto_wallet import CryptoWallet
 
 from .utils import logger_config, get_config, save_config
 
@@ -26,6 +26,16 @@ class WalletFinder:
     multiprocessing for optimal performance. It processes permutations of seed
     phrases in parallel, checking each generated wallet address against a set
     of target addresses.
+
+    The class is designed to:
+        - Utilize all available CPU cores efficiently
+        - Process seed phrases in optimized chunks
+        - Save progress periodically
+        - Report results through callback functions
+
+    Note:
+        All methods in this class are static as it serves as a utility class
+        rather than maintaining instance state.
     """
     @staticmethod
     def process(seeds: list[str], target_address: set) -> tuple[bool, list]:
@@ -49,25 +59,35 @@ class WalletFinder:
                 return True, [seeds, address]
             
         except Exception as e:
+            # Don't need to log the exception if exception is value error
             if not isinstance(e, ValueError):
                 print(e)
 
         return False, [None, None]
 
     @staticmethod
-    def start(wordlist: list, target_address: set, update_status_func: types.FunctionType, 
-              update_list_func: types.FunctionType, resume: bool = False) -> None:
+    def start(wordlist: list[str], target_address: list[str], update_status_func: types.FunctionType, update_list_func: types.FunctionType, resume: bool = False) -> None:
         """
         Start the wallet finding process using multiprocessing.
 
+        This function:
+        1. Generates permutations of the wordlist
+        2. Processes chunks of permutations in parallel
+        3. Updates GUI with progress and found wallets
+        4. Saves progress and found wallets to disk
+
         Args:
-            wordlist (list): List of words to use for generating seed phrases
-            target_address (set): Set of target addresses to search for
             update_status_func (types.FunctionType): Callback to update status in GUI
             update_list_func (types.FunctionType): Callback to update found wallets list in GUI
             resume (bool, optional): If True, resumes from last saved progress. Defaults to False.
+
+        Note:
+            - Uses multiprocessing for parallel processing
+            - Saves progress every 10 chunks
+            - Writes found wallets to CSV file immediately
         """
         num_processes = multiprocessing.cpu_count()
+
         combinations = itertools.permutations(wordlist, 12)
         start_from = config["progress"] if resume else 0
 
@@ -75,19 +95,21 @@ class WalletFinder:
         update_status_func('Starting Process...')
 
         if resume:
+            # Delete the old csv file and create a new one
             with open(csv_file, mode="w", newline="", encoding='utf-8') as file:
                 writer = csv.writer(file)
                 writer.writerow(["Seed Phrase", "TRX Address"])
 
-        with multiprocessing.Pool(processes=num_processes) as pool:
-            chunk_size = num_processes * 1000
 
-            for index, chunk in enumerate(chunked(itertools.islice(combinations, start_from, None), chunk_size), 
-                                       start=int(start_from / chunk_size) - 1):
+        # Parallel processing
+        with multiprocessing.Pool(processes=num_processes) as pool:
+            chunk_size = num_processes * 1000  # Adjust as per system resources
+
+            # Process in chunks
+            for index, chunk in enumerate(chunked(itertools.islice(combinations, start_from, None), chunk_size), start=int(start_from / chunk_size) - 1):
                 process_count = (index + 1) * chunk_size
                 update_status_func(f'Checking Wallet: {"{:,}".format(process_count)}\t({num_processes} cores)')
-                results = pool.starmap_async(WalletFinder.process, 
-                                          [(seeds, target_address) for seeds in chunk])
+                results: AsyncResult = pool.starmap_async(WalletFinder.process, [(seeds, target_address) for seeds in chunk])
 
                 results.wait()
                 process_results = results.get()
@@ -101,6 +123,7 @@ class WalletFinder:
                         csv_writer.writerow([seeds, address])
                     update_list_func(seeds, address)
 
+                    # Update config progress value
                     if index % 10 == 0:
                         config["progress"] = (index + 1) * chunk_size
                         save_config()

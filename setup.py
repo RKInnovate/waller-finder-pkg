@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import os
 
 # Read the contents of README.md
 with open("README.md", encoding="utf-8") as f:
@@ -11,7 +10,7 @@ with open("requirements.txt", encoding="utf-8") as f:
 
 setup(
     name="crypto-wallet-finder",  # Changed to be more specific and avoid conflicts
-    version="1.0.1",
+    version="1.0.2",
     packages=find_packages(),
     install_requires=requirements,
     

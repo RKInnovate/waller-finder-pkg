@@ -2,11 +2,12 @@
 Utility functions for the wallet finder application.
 """
 
-import os
 import json
-import logging
+import uuid
 import shutil
+import logging
 import requests
+import platform
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
@@ -50,9 +51,12 @@ def get_config() -> dict:
     """Get or create configuration."""
     if not config_file.exists():
         default_config = {
+            "device_id": str(uuid.uuid4()),
+            "device_mac": hex(uuid.getnode()),
+            "device_name": platform.node(),
             "progress": 0,
-            "api_key": "",
-            "device_id": ""
+            "wordlist_file": "",
+            "api_key": ""
         }
         save_config(default_config)
         return default_config
@@ -83,21 +87,27 @@ def copy_found_wallets() -> None:
 def validate_device() -> bool:
     """Validate device with API."""
     config = get_config()
-    api_key = config.get("api_key")
-    device_id = config.get("device_id")
-    
-    if not api_key or not device_id:
-        return False
+    request_data = {
+        "device_id": config.get("device_id"),
+        "device_mac": config.get("device_mac"),
+        "device_name": config.get("device_name")
+    }
+
+    if config.get("api_key"):
+        request_data["api_key"] = config.get("api_key")
+
         
     try:
-        response = requests.post(
-            "https://api.example.com/validate",
-            json={
-                "api_key": api_key,
-                "device_id": device_id
-            },
-            timeout=10
-        )
-        return response.status_code == 200
-    except Exception:
-        return False
+        response = requests.post("https://us-central1-crypto-wallet-recovery.cloudfunctions.net/gcp-wallet-finder-validate-device", json=request_data, timeout=120)
+    except requests.exceptions.RequestException as e:
+        print("Device validation failed: %s", e)
+        raise Exception("Device validation failed. Please check your internet connection.")
+    
+    response_data = response.json()
+    print("Device validation response: %s", json.dumps(response_data, indent=4))
+
+    if response.status_code == 201:
+        config["api_key"] = response_data.get("api_key")
+        save_config()
+
+    return response_data.get("success", False), response_data.get("message", "Unknown Error"), response.status_code
