@@ -2,6 +2,7 @@
 Utility functions for the wallet finder application.
 """
 
+import os
 import json
 import uuid
 import shutil
@@ -81,6 +82,9 @@ def save_config(config_data: dict = None) -> None:
 def copy_found_wallets() -> None:
     """Copy found wallets to downloads directory."""
     if csv_file.exists():
+        if os.stat(csv_file).st_size <= 25:
+            return
+
         dest_file = download_dir / "found_wallets.csv"
         shutil.copy2(csv_file, dest_file)
 
