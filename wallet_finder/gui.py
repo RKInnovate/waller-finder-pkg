@@ -2,6 +2,7 @@
 GUI implementation for the wallet finder application.
 """
 
+import re
 import os
 import sys
 import threading
