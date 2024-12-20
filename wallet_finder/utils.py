@@ -108,6 +108,6 @@ def validate_device() -> bool:
 
     if response.status_code == 201:
         config["api_key"] = response_data.get("api_key")
-        save_config()
+        save_config(config)
 
     return response_data.get("success", False), response_data.get("message", "Unknown Error"), response.status_code
