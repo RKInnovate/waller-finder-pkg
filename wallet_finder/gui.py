@@ -217,6 +217,7 @@ class WalletFinderGUI:
         try:
             # Validate the device with the API key
             success, status, status_code = validate_device()
+            self.config = get_config()
             if not success or status_code != 200:
                 messagebox.showerror("Device Validation Failed", f"Device validation failed with status: {status}")
                 self.update_status(f"Device validation failed with status: {status}")

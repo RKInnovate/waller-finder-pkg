@@ -10,7 +10,7 @@ with open("requirements.txt", encoding="utf-8") as f:
 
 setup(
     name="crypto-wallet-finder",  # Changed to be more specific and avoid conflicts
-    version="1.0.5",
+    version="1.0.6",
     packages=find_packages(),
     install_requires=requirements,
     
