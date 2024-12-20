@@ -2,6 +2,7 @@
 Core functionality for wallet finding operations.
 """
 
+import os
 import csv
 import types
 import itertools
@@ -16,7 +17,6 @@ logger = logger_config()
 app_data_dir = Path.home() / '.wallet_finder'
 csv_file = app_data_dir / "found_wallets.csv"
 config_file = app_data_dir / "config.json"
-config = get_config()
 
 class WalletFinder:
     """
@@ -37,6 +37,19 @@ class WalletFinder:
         All methods in this class are static as it serves as a utility class
         rather than maintaining instance state.
     """
+
+    def __init__(self):
+        """
+        Initialize the wallet finder.
+
+        This method initializes the wallet finder by creating the CSV file
+        for storing found wallets if it does not exist.
+        """
+        if not os.path.exists(csv_file):
+            with open(csv_file, mode="w", newline="", encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Seed Phrase", "TRX Address"])
+
     @staticmethod
     def process(seeds: list[str], target_address: set) -> tuple[bool, list]:
         """
@@ -87,6 +100,7 @@ class WalletFinder:
             - Writes found wallets to CSV file immediately
         """
         num_processes = multiprocessing.cpu_count()
+        config = get_config()
 
         combinations = itertools.permutations(wordlist, 12)
         start_from = config["progress"] if resume else 0
@@ -94,7 +108,7 @@ class WalletFinder:
         logger.info('Starting Process...')
         update_status_func('Starting Process...')
 
-        if resume:
+        if not resume:
             # Delete the old csv file and create a new one
             with open(csv_file, mode="w", newline="", encoding='utf-8') as file:
                 writer = csv.writer(file)
@@ -123,7 +137,7 @@ class WalletFinder:
                         csv_writer.writerow([seeds, address])
                     update_list_func(seeds, address)
 
-                    # Update config progress value
-                    if index % 10 == 0:
-                        config["progress"] = (index + 1) * chunk_size
-                        save_config()
+                # Update config progress value
+                if index % 10 == 0:
+                    config["progress"] = (index + 1) * chunk_size
+                    save_config(config)

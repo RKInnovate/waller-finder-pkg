@@ -15,7 +15,6 @@ from .utils import logger_config, load_wordlist, get_config, save_config, copy_f
 
 logger = logger_config()
 app_data_dir = Path.home() / '.wallet_finder'
-config = get_config()
 
 class WalletFinderGUI:
     """
@@ -50,6 +49,7 @@ class WalletFinderGUI:
         self.root = tk_root
         self.root.title("Wallet Finder")
         self.root.geometry("1000x500")
+        self.config = get_config()
 
         # Set window icon
         try:
@@ -68,10 +68,10 @@ class WalletFinderGUI:
 
         self.result_list = []  # List to store results (seed, address)
         
-        self.addresses = set(config.get("addresses", []))
+        self.addresses = set(self.config.get("addresses", []))
         target_address = self.addresses
 
-        wordlist = load_wordlist(config.get("wordlist_file")) if config.get("wordlist_file") else []
+        wordlist = load_wordlist(self.config.get("wordlist_file")) if self.config.get("wordlist_file") else []
         self.create_widgets()
 
     def create_widgets(self):
@@ -85,7 +85,7 @@ class WalletFinderGUI:
         self.add_address_button = tk.Button(self.root, text="Edit Addresses" if len(self.addresses) > 0 else "Add Addresses", command=self.add_addresses)
         self.add_address_button.pack(pady=10)
 
-        wordlist_file = config.get("wordlist_file")
+        wordlist_file = self.config.get("wordlist_file")
 
         # Select Wordlist File Button
         self.select_wordlist_button = tk.Button(self.root, text="Select Wordlist File" if not wordlist_file else "Change Wordlist File", command=self.select_wordlist_file)
@@ -143,8 +143,8 @@ class WalletFinderGUI:
 
             addresses = [re.sub(r'[,"\'\s]', '', address) for address in addresses if address.strip()]  # Clean and split
             self.addresses = set(addresses)
-            config["addresses"] = list(self.addresses)
-            save_config()
+            self.config["addresses"] = list(self.addresses)
+            save_config(self.config)
             target_address = self.addresses
             self.add_address_button.config(text="Edit Addresses")
             address_window.destroy()
@@ -187,8 +187,8 @@ class WalletFinderGUI:
 
         if file_path:
             wordlist = load_wordlist(file_path)
-            config["wordlist_file"] = file_path
-            save_config()
+            self.config["wordlist_file"] = file_path
+            save_config(self.config)
         else:
             messagebox.showwarning("No File", "No file was selected!")
 
@@ -227,8 +227,8 @@ class WalletFinderGUI:
             self.update_status(f"Device validation failed: {e}")
             return
 
-        if not wordlist and config.get("wordlist_file"):
-            wordlist = load_wordlist(config.get("wordlist_file"))
+        if not wordlist and self.config.get("wordlist_file"):
+            wordlist = load_wordlist(self.config.get("wordlist_file"))
 
         if not wordlist:
             messagebox.showerror("No Wordlist", "No wordlist file selected!")
@@ -240,7 +240,7 @@ class WalletFinderGUI:
             self.update_status("No TRX address added! Please add an address.")
             return
         
-        if config["progress"] > 0:
+        if self.config["progress"] > 0:
             resume = messagebox.askyesno("Progress", "Do you want to continue from the last progress?")
 
         # Initialize the WalletFinder instance
